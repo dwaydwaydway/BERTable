@@ -1,0 +1,4 @@
+exp/forest_cover_type/data/*
+exp/adult/data/*
+.vscode/
+__pycache__/

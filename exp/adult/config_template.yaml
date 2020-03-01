@@ -1,0 +1,17 @@
+numerical_column: ['age', 'fnlwgt', 'education_num', 'capital_gain', 'capital_loss', 'hours_per_week']
+scategorical_column: ['workclass', 'education', 'marital_status', 'occupation', 'relationship', 'race', 'sex', 'native_country']
+training_files: ["data/adult.train", "adult/adult.test"]
+evaluation_file: 
+model:
+  embedding_dim: 10
+  n_layers: 5
+  hidden_dim: 100
+  n_head: 5
+  dropout: 0.15
+training:
+  max_epochs: 10
+  lr: 0.0001
+  mask_rate: 0.15
+  n_neg: 5
+  batch_size: 64
+  num_workers: 10
