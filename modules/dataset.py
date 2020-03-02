@@ -72,8 +72,7 @@ class TorchDataset(Dataset):
         if len(self.col_type['numerical']) > 0:
             sample['gathering']['numerical'] = [
                 [mask_prob[col] and col in self.col_type['numerical']] * self.embedding_dim for col in range(len(idx))]
-            sample['labels']['numerical'] = [weight[col]
-                                             for col in self.col_type['numerical'] if mask_prob[col]]
+            sample['labels']['numerical'] = weight
 
         if len(self.col_type['categorical']) > 0:
             sample['gathering']['categorical'] = {
@@ -116,12 +115,16 @@ def collate_fn(batch):
         [data['input']['idx'] for data in batch])
     output['input']['weight'] = torch.FloatTensor(
         [data['input']['weight'] for data in batch]).unsqueeze(2)
+    output['input']['weight'] = F.normalize(output['input']['weight'], dim=0)
 
     if 'numerical' in batch[0]['gathering']:
         output['gathering']['numerical'] = torch.ByteTensor(
             [data['gathering']['numerical'] for data in batch])
         output['labels']['numerical'] = torch.FloatTensor(
             [[label] for data in batch for label in data['labels']['numerical']])
+        output['labels']['numerical'] = torch.masked_select(
+                        output['labels']['numerical'], batch['gathering']['categorical']['encoder_o'])
+        output['loss_normalize'] = 
 
     if 'categorical' in batch[0]['gathering']:
         output['gathering']['categorical'] = {}
