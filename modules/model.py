@@ -73,7 +73,6 @@ class Model(nn.Module):
         self.embedding_dim = embedding_dim
 
         self.loss_f = {
-            'numerical': nn.MSELoss(reduction='none'),
             'categorical': nn.CrossEntropyLoss(),
             'vector': nn.MSELoss(reduction='mean')}
 
@@ -101,8 +100,9 @@ class Model(nn.Module):
                 logits['numerical'] = self.numerical_out(
                     torch.masked_select(
                         encoder_o, batch['gathering']['numerical']).view(-1, self.embedding_dim))
+                losses['numerical'] = ((logits['numerical'] - batch['labels']['numerical']) / (batch['std'] + 1e-8)) ** 2
                 losses['numerical'] = torch.clamp(
-                    self.loss_f['numerical'](logits['numerical'], batch['labels']['numerical']), 
+                    losses['numerical'], 
                     self.loss_clip[0], 
                     self.loss_clip[1]).mean()
 

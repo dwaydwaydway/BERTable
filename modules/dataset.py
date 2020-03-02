@@ -121,10 +121,13 @@ def collate_fn(batch):
         output['gathering']['numerical'] = torch.ByteTensor(
             [data['gathering']['numerical'] for data in batch])
         output['labels']['numerical'] = torch.FloatTensor(
-            [[label] for data in batch for label in data['labels']['numerical']])
+            [data['labels']['numerical'] for data in batch])
+        output['std'] = torch.std(output['labels']['numerical'], dim=0,
+                                  unbiased=True, keepdim=True).repeat(len(batch), 1)
+        output['std'] = torch.masked_select(
+            output['std'], output['gathering']['numerical'][:, :, 0]).unsqueeze(1)
         output['labels']['numerical'] = torch.masked_select(
-                        output['labels']['numerical'], batch['gathering']['categorical']['encoder_o'])
-        output['loss_normalize'] = 
+            output['labels']['numerical'], output['gathering']['numerical'][:, :, 0]).unsqueeze(1)
 
     if 'categorical' in batch[0]['gathering']:
         output['gathering']['categorical'] = {}
@@ -159,6 +162,8 @@ def transfer(batch, device):
         batch['gathering']['numerical'] = batch['gathering']['numerical'].to(
             device)
         batch['labels']['numerical'] = batch['labels']['numerical'].to(device)
+        batch['std'] = batch['std'].to(device)
+
     if 'categorical' in batch['gathering']:
         batch['gathering']['categorical']['encoder_o'] = batch['gathering']['categorical']['encoder_o'].to(
             device)
