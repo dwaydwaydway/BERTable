@@ -61,26 +61,27 @@ class TorchDataset(Dataset):
         idx, weight, fix_mask_prob = self.data['indices'][index], self.data[
             'weights'][index], self.data['fix_mask_prob'][index]
 
-        mask_prob = np.random.rand(len(idx))
-        mask_prob += fix_mask_prob
+        mask_prob = np.random.rand(len(idx)) + fix_mask_prob
+        mask_prob = mask_prob < self.mask_rate
 
         sample['input']['idx'] = [self.mask_idx(
-            idx[col]) if mask_prob[col] < self.mask_rate and col in self.col_type['categorical'] else idx[col] for col in range(len(idx))]
+            idx[col]) if mask_prob[col] and col in self.col_type['categorical'] else idx[col] for col in range(len(idx))]
         sample['input']['weight'] = [self.mask_weight(
-            weight[col]) if mask_prob[col] < self.mask_rate and col in self.col_type['numerical'] else weight[col] for col in range(len(idx))]
+            weight[col]) if mask_prob[col] and col in self.col_type['numerical'] else weight[col] for col in range(len(idx))]
 
         if len(self.col_type['numerical']) > 0:
-            sample['gathering']['numerical'] = [[mask_prob[col] <
-                                                 self.mask_rate and col in self.col_type['numerical']] * self.embedding_dim for col in range(len(idx))]
+            sample['gathering']['numerical'] = [
+                [mask_prob[col] and col in self.col_type['numerical']] * self.embedding_dim for col in range(len(idx))]
             sample['labels']['numerical'] = [weight[col]
-                                             for col in self.col_type['numerical'] if mask_prob[col] < self.mask_rate]
+                                             for col in self.col_type['numerical'] if mask_prob[col]]
 
         if len(self.col_type['categorical']) > 0:
             sample['gathering']['categorical'] = {
-                'encoder_o': [[mask_prob[col] < self.mask_rate and col in self.col_type['categorical']] * self.embedding_dim
+                'encoder_o': [[mask_prob[col] and col in self.col_type['categorical']] * self.embedding_dim
                               for col in range(len(idx))],
                 'samples': []}
-            label_idx = [idx[col] for col in self.col_type['categorical'] if mask_prob[col] < self.mask_rate]
+            label_idx = [idx[col] for col in self.col_type['categorical']
+                         if mask_prob[col]]
             for value in label_idx:
                 neg_sample = torch.multinomial(self.neg_freq[value], min(
                     len(torch.nonzero(self.neg_freq[value])), self.n_sample))
@@ -89,18 +90,19 @@ class TorchDataset(Dataset):
                         self.n_sample - len(neg_sample), dtype=torch.long) * len(self.item2idx['categorical'])))
                 sample['gathering']['categorical']['samples'].append(
                     torch.cat((torch.LongTensor([value]), neg_sample)))
-            sample['gathering']['categorical']['dummy_indices'] = [0] *  len(label_idx)
+            sample['gathering']['categorical']['dummy_indices'] = [
+                0] * len(label_idx)
             sample['labels']['categorical'] = [0] * len([
-                col for col in self.col_type['categorical'] if mask_prob[col] < self.mask_rate])
+                col for col in self.col_type['categorical'] if mask_prob[col]])
 
         if len(self.col_type['vector']) > 0:
             vector = self.data['vector'][index]
             sample['input']['vector'] = [self.mask_vector(
-                vector[col], col) if mask_prob[col] < self.mask_rate and col in self.col_type['vector'] else vector[col] for col in range(len(idx))]
+                vector[col], col) if mask_prob[col] and col in self.col_type['vector'] else vector[col] for col in range(len(idx))]
             sample['gathering']['vector'] = [[mask_prob[col] <
                                               self.mask_rate and col in self.col_type['vector']] * self.embedding_dim for col in range(len(idx))]
             sample['labels']['vector'] = [vector[col]
-                                          for col in self.col_type['vector'] if mask_prob[col] < self.mask_rate]
+                                          for col in self.col_type['vector'] if mask_prob[col]]
 
         if self.use_pos:
             sample['pos'] = torch.arange(0, len(idx))
