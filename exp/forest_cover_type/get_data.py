@@ -37,9 +37,9 @@ def main(config_path):
 
     indices = {}
     indices['train'], indices['test'] = train_test_split(
-        range(n_total), test_size=config.test_size, random_state=0)
+        range(n_total), test_size=config.test_size, random_state=config.random_state)
     indices['train'], indices['val'] = train_test_split(
-        indices['train'], test_size=config.val_size, random_state=0)
+        indices['train'], test_size=config.val_size, random_state=config.random_state)
 
     dataframe = {}
     for split in {'train', 'test', 'val'}:
