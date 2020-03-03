@@ -41,30 +41,3 @@ param_grid:
 fit_params:
   objective: multi:softmax
   eval_metric: merror
-
-model_path: checkpoint/model.ckpt
-model_param:
-  embedding_dim: 8
-  n_layers: 5
-  n_head: 10
-  d_k: 24
-  d_v: 24
-  dropout: 0.25
-  gamma: 0
- 
-datalader_param:
-  batch_size: 512
-  shuffle: True
-  num_workers: 0
-
-param:
-  use_pos: True
-  max_epochs: 100
-  learning_rate: 1e-3
-  mask_rate: 0.2
-  validating_freq: 1
-  earlystopping: 10
-  alpha: 0.5
-  share_category: True
-  num_processes: 3
-  n_neg: 7
