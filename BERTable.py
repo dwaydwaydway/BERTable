@@ -9,6 +9,7 @@ from modules.model import Model
 from modules.dataset import create_dataloader, transfer
 from modules.vocab import Vocab
 from modules.logger import create_logger
+import ipdb
 
 torch.backends.cudnn.benchmark = True
 warnings.filterwarnings("ignore")
@@ -48,7 +49,7 @@ class BERTable():
         self.model = Model(
             vocab_size, self.col_type, use_pos,
             vector_dims, embedding_dim, dim_feedforward, tab_len,
-            n_layers, n_head, dropout).to(device)
+            n_layers, n_head, dropout)
 
     def fit(
             self,
@@ -59,27 +60,25 @@ class BERTable():
             n_sample=4, mask_rate=0.15, replace_rate=0.8,
             batch_size=32, shuffle=True, num_workers=1):
 
-        self.logger.info("[-] Start Pretraining")
+        
         self.model.loss_clip = loss_clip
-
+        self.logger.info("[-] Converting to indices")
         data = self.vocab.convert(df, num_workers)
 
+        self.model.to(self.device)
+        self.model.train()
         optimizer = torch.optim.Adam(
             self.model.parameters(), lr=float(lr))
+
+        self.logger.info("[-] Start Pretraining")
 
         process_bar = tqdm(
             range(max_epochs),
             desc=f"[Progress]",
             total=max_epochs,
+            leave=True,
             position=0)
-
-        metric_bar = tqdm(
-            [0],
-            desc=f"[Metric]",
-            bar_format="{desc}{postfix}",
-            leave=False,
-            position=2)
-
+        
         for epoch in process_bar:
 
             generator = create_dataloader(
@@ -89,7 +88,15 @@ class BERTable():
                 mask_rate=mask_rate,
                 replace_rate=replace_rate,
                 n_sample=n_sample,
-                shuffle=shuffle)
+                shuffle=shuffle, 
+                mode='train')
+
+            metric_bar = tqdm(
+                [0],
+                desc=f"[Metric]",
+                bar_format="{desc} {postfix}",
+                leave=False,
+                position=2)
 
             epoch_bar = tqdm(
                 generator,
@@ -119,38 +126,44 @@ class BERTable():
 
             process_bar.write(f'[Log] Epoch {epoch:0>2d}| ' + display)
             epoch_bar.close()
-        metric_bar.close()
+            metric_bar.close()
+
         process_bar.close()
 
+        self.model.cpu()
+
     def transform(self, df, batch_size=32, num_workers=1):
-        self.logger.info("[-] Start Transforming")
+        self.logger.info("[-] Converting to indices")
         data = self.vocab.convert(df, num_workers)
-        prcess_bar = tqdm(
-            range(1),
-            desc=f"[Progress]",
-            position=0)
 
         generator = create_dataloader(
             data, self.col_type, self.vocab,
             self.embedding_dim, self.use_pos,
-            batch_size, num_workers,
-            mask_rate=0,
-            n_sample=1,
-            shuffle=False)
+            batch_size, num_workers, mode='test')
+
+        self.logger.info("[-] Start Transforming")
 
         process_bar = tqdm(
             generator,
             desc=f"[Process]",
             leave=False,
-            position=1)
+            position=0)
+            
+        self.model.to(self.device)
+        self.model.eval()
 
         df_t = []
         for batch_data in process_bar:
             batch_data = transfer(batch_data, self.device)
             feature = self.model.forward(batch_data, mode='test')
-            df_t += list(feature)
+            if len(df_t) == 0:
+                df_t = list(feature.view(feature.size(0), -1).cpu().detach().numpy())
+            else:
+                df_t += list(feature.view(feature.size(0), -1).cpu().detach().numpy())
 
         process_bar.close()
+        self.model.cpu()
+
         return df_t
 
     def save(self, model_path='model.ckpt', vocab_path='vocab.pkl'):

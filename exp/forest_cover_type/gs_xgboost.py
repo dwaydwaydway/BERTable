@@ -1,5 +1,6 @@
 import xgboost as xgb
 import pandas as pd
+import numpy as np
 import argparse
 import time
 from sklearn.model_selection import GridSearchCV
@@ -8,6 +9,7 @@ from box import Box
 from pathlib import Path
 
 import ipdb
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -18,45 +20,43 @@ def parse_args():
     args = parser.parse_args()
     return vars(args)
 
+
 def main(config_path):
     config = Box.from_yaml(config_path.open())
 
     x, y = {}, {}
-    for split in {'train', 'test', 'val'}:
-        x[split] = pd.read_csv(config / f'{split}_covertype.csv', header=None)
-        y[split] = x[split].iloc[len(x[split].columns)-1]
-        x[split] = x[split].drop(len(x[split].columns)-1, axis=1)
+    for split in {'train', 'val'}:
+        x[split] = pd.read_csv(Path(config.data_dir) / f'{split}_bertable_x.csv', header=None)
+        y[split] = pd.read_csv(Path(config.data_dir) / f'{split}_bertable_y.csv', header=None)
 
     clf = xgb.XGBClassifier()
 
     param_grid = {
-        'max_depth': list(range(config.param_grid.max_depth)),
-        'learning_rate': list(range(config.param_grid.learning_rate)),
-        'subsample': list(range(config.param_grid.subsample)),
-        'colsample_bytree': list(range(config.param_grid.colsample_bytree)),
-        'colsample_bylevel': list(range(config.param_grid.colsample_bylevel)),
-        'colsample_bynode': list(range(config.param_grid.colsample_bynode)),
-        'min_child_weight': list(range(config.param_grid.min_child_weight)),
-        'gamma': list(range(config.param_grid.gamma)),
-        'reg_lambda': list(range(config.param_grid.reg_lambda)),
-        'n_estimators': list(range(config.param_grid.n_estimators))}
+        'max_depth': np.arange(*config.param_grid.max_depth),
+        'learning_rate': np.arange(*config.param_grid.learning_rate),
+        'subsample': np.arange(*config.param_grid.subsample),
+        'colsample_bytree': np.arange(*config.param_grid.colsample_bytree),
+        'colsample_bylevel': np.arange(*config.param_grid.colsample_bylevel),
+        'colsample_bynode': np.arange(*config.param_grid.colsample_bynode),
+        'min_child_weight': np.arange(*config.param_grid.min_child_weight),
+        'gamma': np.arange(*config.param_grid.gamma),
+        'reg_lambda': np.arange(*config.param_grid.reg_lambda),
+        'n_estimators': np.arange(*config.param_grid.n_estimators)}
 
     fit_params = {
         'objective': config.fit_params.objective,
         'eval_metric': config.fit_params.eval_metric,
         'early_stopping_rounds': config.fit_params.early_stopping_rounds,
-        'eval_set': [(x['val'], y['val'])]}
+        'eval_set': [(x['train'], y['train']), (x['val'], y['val']), (x['test'], y['test'])]}
 
     rs_clf = GridSearchCV(
-        clf, param_grid, 
-        n_iter=20,
-        n_jobs=config.num_workers, verbose=2, cv=2,
-        fit_params=fit_params,
-        scoring='accuracy', refit=False, random_state=config.random_state)
+        clf, param_grid,
+        n_jobs=config.num_workers, verbose=2, cv=5,
+        scoring='accuracy', refit=False)
 
     print("Grid search..")
     search_time_start = time.time()
-    rs_clf.fit(x['train'], y['train'])
+    rs_clf.fit(x['val'], y['val'], **fit_params)
     print("Grid search time:", time.time() - search_time_start)
 
     best_score = rs_clf.best_score_

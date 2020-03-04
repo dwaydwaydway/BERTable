@@ -25,14 +25,14 @@ def parse_args():
 
 def main(config_path):
     config = Box.from_yaml(config_path.open())
-    if not os.path.exists(config.data_dir / 'covtype.csv'):
+    if not os.path.exists(config.data_dir / 'covertype.csv'):
         os.makedirs(config.data_dir)
 
         filename = wget.download(config.url)
         with gzip.open(filename, 'rb') as f_in:
-            with open(config.data_dir / 'covtype.csv', 'wb') as f_out:
+            with open(config.data_dir / 'covertype.csv', 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
-    df = pd.read_csv(config.data_dir / 'covtype.csv')
+    df = pd.read_csv(config.data_dir / 'covertype.csv')
     n_total = len(df)
 
     indices = {}
@@ -47,7 +47,7 @@ def main(config_path):
         if split == 'train':
             dataframe['split'] = dataframe['split'].sample(frac=1)
         dataframe['split'].to_csv(
-            config.data_dir / f'{split}_covertype.csv', index=False, header=False)
+            Path(config.data_dir) / f'{split}_covertype.csv', index=False, header=False)
 
 
 if __name__ == '__main__':

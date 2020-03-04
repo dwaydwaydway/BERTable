@@ -1,0 +1,4 @@
+url: https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.data.gz
+random_state: 0
+test_size: 0.2
+val_size: 0.2

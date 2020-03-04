@@ -4,6 +4,7 @@ from multiprocessing import Pool
 
 import numpy as np
 import torch
+from tqdm import tqdm
 
 import ipdb
 
@@ -21,16 +22,16 @@ class Vocab():
         self.col_type = col_type
 
         if share_category:
-            self.col_hash = [uuid.uuid4().hex[:6]] * sum([len(col)
+            self.col_hash = [uuid.uuid4().hex[:6]] * sum([len(col_type[col])
                                                           for col in col_type])
         else:
             self.col_hash = set()
-            while len(self.col_hash) < sum([len(col) for col in col_type]):
+            while len(self.col_hash) < sum([len(col_type[col]) for col in col_type]):
                 self.col_hash.add(uuid.uuid4().hex[:6])
             self.col_hash = list(self.col_hash)
 
         df_t = list(map(list, zip(*df)))
-        for col, data in enumerate(df_t):
+        for col, data in enumerate(tqdm(df_t)):
 
             if col in col_type['numerical']:
                 self.item2idx['numerical'][f'col_{col}'] = len(self.item2idx['numerical'])+1

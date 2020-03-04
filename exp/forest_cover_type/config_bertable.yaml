@@ -1,0 +1,22 @@
+num_workers: 11
+data_dir: data
+use_label: False
+model:
+  embedding_dim: 10
+  n_layers: 5
+  dim_feedforward: 100
+  n_head: 10
+  dropout: 0.15
+  ns_exponent: 0.75
+fit:
+  max_epochs: 3
+  lr: 0.001
+  lr_weight: 
+    numerical: 0.6
+    categorical: 0.3
+    vetor: 0.3
+  loss_clip: [0, 100]
+  n_sample: 10
+  mask_rate: 0.15
+  replace_rate: 0.8
+  batch_size: 256
