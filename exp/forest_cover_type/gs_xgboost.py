@@ -25,7 +25,7 @@ def main(config_path):
     config = Box.from_yaml(config_path.open())
 
     x, y = {}, {}
-    for split in {'train', 'val'}:
+    for split in {'train', 'test', 'val'}:
         x[split] = pd.read_csv(Path(config.data_dir) / f'{split}_bertable_x.csv', header=None)
         y[split] = pd.read_csv(Path(config.data_dir) / f'{split}_bertable_y.csv', header=None)
 
