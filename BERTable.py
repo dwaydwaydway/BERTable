@@ -32,7 +32,6 @@ class BERTable():
         self.use_pos = use_pos
         self.device = device
 
-        self.logger.info(f'[-] Building Vocab ...')
         self.vocab = Vocab(
             df,
             self.col_type,
@@ -51,7 +50,7 @@ class BERTable():
             vector_dims, embedding_dim, dim_feedforward, tab_len,
             n_layers, n_head, dropout)
 
-    def fit(
+    def pretrain(
             self,
             df,
             max_epochs=3, lr=1e-4,
@@ -88,8 +87,7 @@ class BERTable():
                 mask_rate=mask_rate,
                 replace_rate=replace_rate,
                 n_sample=n_sample,
-                shuffle=shuffle, 
-                mode='train')
+                shuffle=shuffle)
 
             metric_bar = tqdm(
                 [0],
@@ -132,39 +130,36 @@ class BERTable():
 
         self.model.cpu()
 
-    def transform(self, df, batch_size=32, num_workers=1):
-        self.logger.info("[-] Converting to indices")
-        data = self.vocab.convert(df, num_workers)
+    # def transform(self, df, batch_size=32, num_workers=1):
+    #     self.logger.info("[-] Converting to indices")
+    #     data = self.vocab.convert(df, num_workers)
 
-        generator = create_dataloader(
-            data, self.col_type, self.vocab,
-            self.embedding_dim, self.use_pos,
-            batch_size, num_workers, mode='test')
+    #     generator = create_dataloader(
+    #         data, self.col_type, self.vocab,
+    #         self.embedding_dim, self.use_pos,
+    #         batch_size, num_workers, mode='test')
 
-        self.logger.info("[-] Start Transforming")
+    #     self.logger.info("[-] Start Transforming")
 
-        process_bar = tqdm(
-            generator,
-            desc=f"[Process]",
-            leave=False,
-            position=0)
+    #     process_bar = tqdm(
+    #         generator,
+    #         desc=f"[Process]",
+    #         leave=False,
+    #         position=0)
             
-        self.model.to(self.device)
-        self.model.eval()
+    #     self.model.to(self.device)
+    #     self.model.eval()
 
-        df_t = []
-        for batch_data in process_bar:
-            batch_data = transfer(batch_data, self.device)
-            feature = self.model.forward(batch_data, mode='test')
-            if len(df_t) == 0:
-                df_t = list(feature.view(feature.size(0), -1).cpu().detach().numpy())
-            else:
-                df_t += list(feature.view(feature.size(0), -1).cpu().detach().numpy())
+    #     df_t = []
+    #     for batch_data in process_bar:
+    #         batch_data = transfer(batch_data, self.device)
+    #         feature = self.model.forward(batch_data, mode='test')
+    #         df_t += list(feature.cpu().detach().numpy())
 
-        process_bar.close()
-        self.model.cpu()
+    #     process_bar.close()
+    #     self.model.cpu()
 
-        return df_t
+    #     return df_t
 
     def save(self, model_path='model.ckpt', vocab_path='vocab.pkl'):
         torch.save(self.model.state_dict(), model_path)

@@ -31,7 +31,7 @@ class Vocab():
             self.col_hash = list(self.col_hash)
 
         df_t = list(map(list, zip(*df)))
-        for col, data in enumerate(tqdm(df_t)):
+        for col, data in enumerate(tqdm(df_t, leave=False, desc=f"[Building Vocab]")):
 
             if col in col_type['numerical']:
                 self.item2idx['numerical'][f'col_{col}'] = len(self.item2idx['numerical'])+1

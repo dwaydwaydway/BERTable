@@ -1,11 +1,12 @@
 num_workers: 11
 data_dir: data
 use_label: False
+pretrain: True
 model:
-  embedding_dim: 10
+  embedding_dim: 5
   n_layers: 5
   dim_feedforward: 100
-  n_head: 10
+  n_head: 5
   dropout: 0.15
   ns_exponent: 0.75
 fit:
@@ -19,4 +20,11 @@ fit:
   n_sample: 10
   mask_rate: 0.15
   replace_rate: 0.8
-  batch_size: 256
+  batch_size: 128
+cls:
+  dim_feedforward: 100
+  n_layers: 2
+  dropout: 0.15
+  pooling: None
+  max_epochs: 10
+  lr: 0.001

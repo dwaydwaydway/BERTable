@@ -33,7 +33,7 @@ def main(config_path):
     # classifier
     clf = xgb.XGBClassifier(
         max_depth=20, n_estimators=400, learning_rate=0.03, n_jobs=config.num_workers, 
-        subsample=0.5, colsample_bytree=0.7, colsample_bylevel=0.7, colsample_bynode=0.7, seed=4242, objective='multi:softmax', gamma=3, reg_lambda=2)
+        subsample=0.5, colsample_bytree=0.7, colsample_bylevel=0.7, colsample_bynode=0.7, seed=4242, objective='multi:softmax')
 
     # fitting
     clf.fit(x['train'], y['train'], early_stopping_rounds=20,
