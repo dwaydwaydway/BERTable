@@ -1,4 +1,4 @@
-BERTable: Universial Representation Learning for Tabular data
+BERTable: Universal Representation Learning for Tabular data
 ===
 
 ## Requirements
